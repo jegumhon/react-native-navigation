@@ -135,7 +135,8 @@ var Controllers = {
       var layout = controller.render();
       _validateDrawerProps(layout);
       _processProperties(_.get(layout, 'props.appStyle', {}));
-      // RCCManager.setRootController(layout, animationType, passProps);
+      RCCManager.setNavigationRootController(layout, animationType, passProps);
+      return layout
     }
   },
 

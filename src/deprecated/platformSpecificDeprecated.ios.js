@@ -279,7 +279,7 @@ function startSingleNavigation(params) {
   savePassProps(params);
 
   ControllerRegistry.registerController(controllerID, () => Controller);
-  ControllerRegistry.setNavigationRootController(controllerID, params.animationType, params.passProps || {});
+  return ControllerRegistry.setNavigationRootController(controllerID, params.animationType, params.passProps || {});
 }
 
 function _mergeScreenSpecificSettings(screenID, screenInstanceID, params) {
