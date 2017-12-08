@@ -28,7 +28,7 @@ function _registerComponentNoRedux(screenID, generator) {
     if (!InternalComponent) {
       console.error(`Navigation: ${screenID} registration result is 'undefined'`);
     }
-    
+
     return class extends Screen {
       static navigatorStyle = InternalComponent.navigatorStyle || {};
       static navigatorButtons = InternalComponent.navigatorButtons || {};
@@ -139,6 +139,10 @@ function startSingleScreenApp(params) {
   return platformSpecific.startSingleScreenApp(params);
 }
 
+function startSingleNavigation(params) {
+  return platformSpecific.startSingleNavigation(params);
+}
+
 function setEventHandler(navigatorEventID, eventHandler) {
   _allNavigatorEventHandlers[navigatorEventID] = eventHandler;
 }
@@ -188,6 +192,7 @@ export default {
   dismissInAppNotification: dismissInAppNotification,
   startTabBasedApp: startTabBasedApp,
   startSingleScreenApp: startSingleScreenApp,
+  startSingleNavigation: startSingleNavigation,
   setEventHandler: setEventHandler,
   clearEventHandler: clearEventHandler,
   handleDeepLink: handleDeepLink,

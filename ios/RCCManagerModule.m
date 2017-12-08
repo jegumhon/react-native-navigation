@@ -205,6 +205,82 @@ RCT_EXPORT_MODULE(RCCManager);
 #pragma mark - RCT exported methods
 
 RCT_EXPORT_METHOD(
+                  setNavigationRootController:(NSDictionary*)layout animationType:(NSString*)animationType globalProps:(NSDictionary*)globalProps)
+{
+    if ([[RCCManager sharedInstance] getBridge].loading) {
+        [self deferSetNavigationRootControllerWhileBridgeLoading:layout animationType:animationType globalProps:globalProps];
+        return;
+    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self performSetNavigationRootController:layout animationType:animationType globalProps:globalProps];
+    });
+}
+
+/**
+ * on RN31 there's a timing issue, we must wait for the bridge to finish loading
+ */
+-(void)deferSetNavigationRootControllerWhileBridgeLoading:(NSDictionary*)layout animationType:(NSString*)animationType globalProps:(NSDictionary*)globalProps
+{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.0001 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self setNavigationRootController:layout animationType:animationType globalProps:globalProps];
+    });
+}
+
+-(void)performSetNavigationRootController:(NSDictionary*)layout animationType:(NSString*)animationType globalProps:(NSDictionary*)globalProps
+{
+
+    NSMutableDictionary *modifiedGloablProps = [globalProps mutableCopy];
+    modifiedGloablProps[GLOBAL_SCREEN_ACTION_COMMAND_TYPE] = COMMAND_TYPE_INITIAL_SCREEN;
+
+    // first clear the registry to remove any refernece to the previous controllers
+    [[RCCManager sharedInstance] clearModuleRegistry];
+    [[RCCManager sharedInstance] setAppStyle:nil];
+
+    NSDictionary *appStyle = layout[@"props"][@"appStyle"];
+    if (appStyle) {
+        [[RCCManager sharedIntance] setAppStyle:appStyle];
+    }
+
+    // create the new controller
+    UIViewController *controller = [RCCViewController controllerWithLayout:layout globalProps:modifiedGloablProps bridge:[[RCCManager sharedInstance] getBridge]];
+    if (controller == nil) return;
+
+    id<UIApplicationDelegate> appDelegate = [UIApplication sharedApplication].delegate;
+    BOOL animated = !((appDelegate.window.rootViewController == nil) || ([animationType isEqualToString:@"none"]));
+
+    // if we're animating - add a snapshot now
+    UIViewController *presentedViewController = nil;
+    UIView *snapshot = nil;
+    if (animated)
+    {
+        if(appDelegate.window.rootViewController.presentedViewController != nil)
+            presentedViewController = appDelegate.window.rootViewController.presentedViewController;
+        else
+            presentedViewController = appDelegate.window.rootViewController;
+
+        snapshot = [presentedViewController.view snapshotViewAfterScreenUpdates:NO];
+        [appDelegate.window.rootViewController.view addSubview:snapshot];
+    }
+
+    // dismiss the modal controllers without animation just so they can be released
+//    [self dismissAllControllers:@"none" resolver:^(id result)
+//     {
+//         // set the new controller as the root
+//         appDelegate.window.rootViewController = controller;
+//         [appDelegate.window makeKeyAndVisible];
+//         [presentedViewController dismissViewControllerAnimated:NO completion:nil];
+//
+//         if (animated)
+//         {
+//             // move the snaphot to the new root and animate it
+//             [appDelegate.window.rootViewController.view addSubview:snapshot];
+//             [self animateSnapshot:snapshot animationType:animationType resolver:nil];
+//         }
+//     } rejecter:nil];
+}
+
+RCT_EXPORT_METHOD(
                   setRootController:(NSDictionary*)layout animationType:(NSString*)animationType globalProps:(NSDictionary*)globalProps)
 {
     if ([[RCCManager sharedInstance] getBridge].loading) {

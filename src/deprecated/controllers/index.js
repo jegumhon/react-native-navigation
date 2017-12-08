@@ -128,6 +128,14 @@ var Controllers = {
       _validateDrawerProps(layout);
       _processProperties(_.get(layout, 'props.appStyle', {}));
       RCCManager.setRootController(layout, animationType, passProps);
+    },
+    setNavigationRootController: function (appKey, animationType = 'none', passProps = {}) {
+      var controller = _controllerRegistry[appKey];
+      if (controller === undefined) return;
+      var layout = controller.render();
+      _validateDrawerProps(layout);
+      _processProperties(_.get(layout, 'props.appStyle', {}));
+      // RCCManager.setRootController(layout, animationType, passProps);
     }
   },
 

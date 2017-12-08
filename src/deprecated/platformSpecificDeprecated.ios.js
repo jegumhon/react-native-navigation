@@ -202,6 +202,86 @@ function startSingleScreenApp(params) {
   ControllerRegistry.setRootController(controllerID, params.animationType, params.passProps || {});
 }
 
+function startSingleNavigation(params) {
+  if (!params.screen) {
+    console.error('startSingleScreenApp(params): params.screen is required');
+    return;
+  }
+
+  const controllerID = _.uniqueId('controllerID');
+  const screen = params.screen;
+  if (!screen.screen) {
+    console.error('startSingleScreenApp(params): screen must include a screen property');
+    return;
+  }
+
+  const navigatorID = controllerID + '_nav';
+  const screenInstanceID = _.uniqueId('screenInstanceID');
+  const {
+    navigatorStyle,
+    navigatorButtons,
+    navigatorEventID
+  } = _mergeScreenSpecificSettings(screen.screen, screenInstanceID, screen);
+  _saveNavigatorButtonsProps(navigatorButtons);
+  _saveNavBarComponentProps(navigatorStyle);
+  params.navigationParams = {
+    screenInstanceID,
+    navigatorStyle,
+    navigatorButtons,
+    navigatorEventID,
+    navigatorID
+  };
+
+  const Controller = Controllers.createClass({
+    render: function() {
+      if (!params.drawer || (!params.drawer.left && !params.drawer.right)) {
+        return this.renderBody();
+      } else {
+        const navigatorID = controllerID + '_drawer';
+        return (
+            <DrawerControllerIOS id={navigatorID}
+                                 componentLeft={params.drawer.left ? params.drawer.left.screen : undefined}
+                                 passPropsLeft={{navigatorID: navigatorID}}
+                                 componentRight={params.drawer.right ? params.drawer.right.screen : undefined}
+                                 passPropsRight={{navigatorID: navigatorID}}
+                                 disableOpenGesture={params.drawer.disableOpenGesture}
+                                 type={params.drawer.type ? params.drawer.type : 'MMDrawer'}
+                                 animationType={params.drawer.animationType ? params.drawer.animationType : 'slide'}
+                                 style={params.drawer.style}
+                                 appStyle={params.appStyle}
+            >
+              {this.renderBody()}
+            </DrawerControllerIOS>
+        );
+      }
+    },
+    renderBody: function() {
+      return (
+          <NavigationControllerIOS
+              id={navigatorID}
+              title={screen.title}
+              subtitle={params.subtitle}
+              titleImage={screen.titleImage}
+              component={screen.screen}
+              passProps={{
+                navigatorID: navigatorID,
+                screenInstanceID: screenInstanceID,
+                navigatorEventID: navigatorEventID
+              }}
+              style={navigatorStyle}
+              leftButtons={navigatorButtons.leftButtons}
+              rightButtons={navigatorButtons.rightButtons}
+              appStyle={params.appStyle}
+          />
+      );
+    }
+  });
+  savePassProps(params);
+
+  ControllerRegistry.registerController(controllerID, () => Controller);
+  ControllerRegistry.setNavigationRootController(controllerID, params.animationType, params.passProps || {});
+}
+
 function _mergeScreenSpecificSettings(screenID, screenInstanceID, params) {
   const screenClass = Navigation.getRegisteredScreen(screenID);
   if (!screenClass) {
@@ -696,6 +776,7 @@ function _saveNavigatorButtonsPassProps(buttons = []) {
 export default {
   startTabBasedApp,
   startSingleScreenApp,
+  startSingleNavigation,
   navigatorPush,
   navigatorPop,
   navigatorPopToRoot,
